@@ -1,0 +1,5 @@
+localhost:80 {
+    root * /app/files
+    file_server
+    header ?Cache-Control "max-age=0"
+}

@@ -29,7 +29,14 @@ You can use this sample configuration in `Caddyfile` file in `caddy` dir.
 localhost:80 {
     root * /home/divar/Desktop/x
     file_server
+    header ?Cache-Control "max-age=0"
 }
 ```
 
 Note: run caddy file with --config Caddyfile arguments.
+
+## Quick start
+You can run project using `startup.sh` file using:
+```bash
+./startup.sh
+```
