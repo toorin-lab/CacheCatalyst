@@ -1,4 +1,4 @@
-import os
+import os, datetime
 import sys, subprocess, jinja2
 
 
@@ -18,6 +18,7 @@ def download_dataset(count, to):
             ["unzip", "-d", f"{to}/a{i}", f"{to}/a{i}.zip"],
         )
         count -= FILE_PER_CURL
+        i += 1
 
 
 def get_paths(root_dir):
@@ -47,9 +48,17 @@ template = templateEnv.get_template(TEMPLATE_FILE)
 pictures = get_paths(media_dir)
 if "-prefix" in args:
     prefix = args[args.index("-prefix") + 1]
-    pictures = [picture.replace(media_dir, prefix) for picture in pictures]
+    pictures = [
+        {"key": picture.replace(media_dir + "/", prefix), "last_modified": datetime.datetime.now() - datetime.timedelta(days=30)}
+        for picture in pictures
+    ]
 outputText = template.render({"pictures": pictures})
 
-with open("x.html", "w") as f:
+with open("index.html", "w") as f:
     f.write(outputText)
 
+subprocess.run([
+    "mv",
+    "index.html",
+    media_dir
+])
