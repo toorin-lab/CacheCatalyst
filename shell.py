@@ -49,7 +49,7 @@ pictures = get_paths(media_dir)
 if "-prefix" in args:
     prefix = args[args.index("-prefix") + 1]
     pictures = [
-        {"key": picture.replace(media_dir + "/", prefix), "last_modified": datetime.datetime.now() - datetime.timedelta(days=30)}
+        {"key": picture.replace(media_dir + "/", prefix)}
         for picture in pictures
     ]
 outputText = template.render({"pictures": pictures})
