@@ -492,7 +492,7 @@ func (fsrv *FileServer) ServeHTTP(w http.ResponseWriter, r *http.Request, next c
 	content := file.(io.ReadSeeker)
 
 	// read and modify html file before serving by http library
-	if strings.HasSuffix(info.Name(), ".html") {
+	if strings.HasSuffix(info.Name(), ".html") && r.Header.Get("new-cache-enabled") != "" {
 		b := new(bytes.Buffer)
 		_, err = b.ReadFrom(content)
 		if err == nil {

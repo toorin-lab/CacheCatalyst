@@ -60,7 +60,7 @@ func injectLastModifiedToMediaTags(fileSystem fs.FS, rootDir, htmlString string)
 
 		imgNode.Attr = append(imgNode.Attr, html.Attribute{
 			Key: LastModified,
-			Val: stat.ModTime().String(),
+			Val: stat.ModTime().UTC().Format("2006-01-02 15:04:05"),
 		})
 	}
 	buffer := new(bytes.Buffer)
