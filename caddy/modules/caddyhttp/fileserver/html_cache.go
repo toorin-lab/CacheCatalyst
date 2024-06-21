@@ -3,6 +3,8 @@ package fileserver
 import (
 	"bufio"
 	"bytes"
+	"encoding/json"
+	"fmt"
 	"io/fs"
 	"slices"
 	"strings"
@@ -24,6 +26,114 @@ func findTags(root *html.Node, tags []atom.Atom) []*html.Node {
 		current = current.NextSibling
 	}
 	return foundTags
+}
+
+func fileLocatedInThisHost(url string) bool {
+	return strings.Contains(url, "localhost") || !strings.Contains(strings.ToLower(url), "http")
+}
+
+func getNormalizedFileName(fileName string) string {
+	qMarkIndex := strings.Index(fileName, "?")
+	if qMarkIndex == -1 {
+		return fileName
+	}
+
+	return fileName[:qMarkIndex]
+}
+
+func getEtagJson(fileSystem fs.FS, rootDir, htmlString string) (string, error) {
+	const LastModified = "last-modified"
+	etagMap := make(map[string]string)
+	root, err := html.Parse(strings.NewReader(htmlString))
+	if err != nil {
+		return "", err
+	}
+
+	imageTags := findTags(root, []atom.Atom{atom.Img, atom.Link})
+	for _, imgNode := range imageTags {
+		var src *html.Attribute
+		for _, attr := range imgNode.Attr {
+			attrCopy := attr
+			if attr.Key == "src" {
+				src = &attrCopy
+				break
+			} else if attr.Key == "href" {
+				src = &attrCopy
+				break
+			}
+		}
+
+		if src == nil || !fileLocatedInThisHost(src.Val) {
+			continue
+		}
+
+		fileName := strings.TrimSuffix(caddyhttp.SanitizedPathJoin(rootDir, getNormalizedFileName(src.Val)), "/")
+		stat, err := fs.Stat(fileSystem, fileName)
+		if err != nil {
+			continue
+		}
+
+		etagMap[src.Val] = calculateEtag(stat)
+	}
+
+	etagJson, err := json.Marshal(map[string]any{
+		"type":  "etags",
+		"etags": etagMap,
+	})
+	if err != nil {
+		return "", err
+	}
+
+	jsCode := fmt.Sprintf(`
+if ('serviceWorker' in navigator) {
+	let glReg;
+    navigator.serviceWorker.register('sw.js').then(function() {
+		console.log('ready place.');
+        return navigator.serviceWorker.ready;
+    }).then(function(reg) {
+        console.log('Service Worker is ready', reg);
+        reg.active.postMessage(%s);
+		glReg = reg;
+    }).catch(function(error) {
+        console.log('Error : ', error);
+    });
+	const renewFunc = function(event) {
+		console.log("unload event.");
+        glReg.active.postMessage({
+			type: 'renew',
+		});
+    };
+	window.onbeforeunload = renewFunc;
+}
+`, string(etagJson))
+	body := findTags(root, []atom.Atom{atom.Body})[0]
+	script := &html.Node{
+		Type:     html.ElementNode,
+		Data:     "script",
+		DataAtom: atom.Script,
+	}
+	script.AppendChild(&html.Node{
+		Type: html.TextNode,
+		Data: jsCode,
+	})
+	if body.FirstChild != nil {
+		body.InsertBefore(script, body.FirstChild)
+	} else {
+		body.AppendChild(script)
+	}
+
+	buffer := new(bytes.Buffer)
+	w := bufio.NewWriter(buffer)
+	err = html.Render(w, root)
+	err = w.Flush()
+	if err != nil {
+		return "", err
+	}
+	if err != nil {
+		return "", err
+	}
+
+	return buffer.String(), nil
 }
 
 func injectLastModifiedToMediaTags(fileSystem fs.FS, rootDir, htmlString string) (string, error) {
