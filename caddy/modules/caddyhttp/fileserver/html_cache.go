@@ -4,7 +4,6 @@ import (
 	"bufio"
 	"bytes"
 	"encoding/json"
-	"fmt"
 	"io/fs"
 	"slices"
 	"strings"
@@ -41,12 +40,11 @@ func getNormalizedFileName(fileName string) string {
 	return fileName[:qMarkIndex]
 }
 
-func getEtagJson(fileSystem fs.FS, rootDir, htmlString string) (string, error) {
-	const LastModified = "last-modified"
+func getEtagJson(fileSystem fs.FS, rootDir, htmlString string) (string, string, error) {
 	etagMap := make(map[string]string)
 	root, err := html.Parse(strings.NewReader(htmlString))
 	if err != nil {
-		return "", err
+		return "", "", err
 	}
 
 	imageTags := findTags(root, []atom.Atom{atom.Img, atom.Link})
@@ -76,36 +74,27 @@ func getEtagJson(fileSystem fs.FS, rootDir, htmlString string) (string, error) {
 		etagMap[src.Val] = calculateEtag(stat)
 	}
 
-	etagJson, err := json.Marshal(map[string]any{
-		"type":  "etags",
-		"etags": etagMap,
-	})
-	if err != nil {
-		return "", err
-	}
-
-	jsCode := fmt.Sprintf(`
+	jsCode := `
 if ('serviceWorker' in navigator) {
-	let glReg;
     navigator.serviceWorker.register('sw.js').then(function() {
-		console.log('ready place.');
         return navigator.serviceWorker.ready;
-    }).then(function(reg) {
-        console.log('Service Worker is ready', reg);
-        reg.active.postMessage(%s);
-		glReg = reg;
-    }).catch(function(error) {
+    }).then(
+		(reg) => {
+			const renewFunc = function(event) {
+				console.log("unload event.");
+				reg.active.postMessage({
+						type: 'renew',
+				});
+    		};
+			window.onbeforeunload = renewFunc;
+		}
+	).catch(function(error) {
         console.log('Error : ', error);
     });
-	const renewFunc = function(event) {
-		console.log("unload event.");
-        glReg.active.postMessage({
-			type: 'renew',
-		});
-    };
-	window.onbeforeunload = renewFunc;
+
+	
 }
-`, string(etagJson))
+`
 	body := findTags(root, []atom.Atom{atom.Body})[0]
 	script := &html.Node{
 		Type:     html.ElementNode,
@@ -127,13 +116,15 @@ if ('serviceWorker' in navigator) {
 	err = html.Render(w, root)
 	err = w.Flush()
 	if err != nil {
-		return "", err
-	}
-	if err != nil {
-		return "", err
+		return "", "", err
 	}
 
-	return buffer.String(), nil
+	etagJson, err := json.Marshal(etagMap)
+	if err != nil {
+		return "", "", err
+	}
+
+	return buffer.String(), string(etagJson), nil
 }
 
 func injectLastModifiedToMediaTags(fileSystem fs.FS, rootDir, htmlString string) (string, error) {

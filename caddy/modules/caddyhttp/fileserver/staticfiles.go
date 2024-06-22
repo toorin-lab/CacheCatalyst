@@ -499,13 +499,13 @@ func (fsrv *FileServer) ServeHTTP(w http.ResponseWriter, r *http.Request, next c
 		b := new(bytes.Buffer)
 		_, err = b.ReadFrom(content)
 		if err == nil {
-			//newContent, err := injectLastModifiedToMediaTags(fsrv.fileSystem, root, b.String())
-			newContent, err := getEtagJson(fsrv.fileSystem, root+r.RequestURI, b.String())
+			newContent, etags, err := getEtagJson(fsrv.fileSystem, root+r.RequestURI, b.String())
 			if err != nil {
 				fsrv.logger.Warn("failed to inject last-modified attr.", zap.Error(err))
 			} else {
 				content = bytes.NewReader([]byte(newContent))
 				r.Header.Set("If-None-Match", "")
+				w.Header().Set("X-Etag-Config", etags)
 				modTime = time.Now()
 			}
 		}
