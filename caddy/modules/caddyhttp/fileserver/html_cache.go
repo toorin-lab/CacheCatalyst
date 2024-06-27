@@ -40,14 +40,14 @@ func getNormalizedFileName(fileName string) string {
 	return fileName[:qMarkIndex]
 }
 
-func getEtagJson(fileSystem fs.FS, rootDir, htmlString string) (string, string, error) {
+func getEtagJsonAndRegisterServiceWorker(fileSystem fs.FS, rootDir, htmlString string) (string, string, error) {
 	etagMap := make(map[string]string)
 	root, err := html.Parse(strings.NewReader(htmlString))
 	if err != nil {
 		return "", "", err
 	}
 
-	imageTags := findTags(root, []atom.Atom{atom.Img, atom.Link})
+	imageTags := findTags(root, []atom.Atom{atom.Img, atom.Link, atom.Script})
 	for _, imgNode := range imageTags {
 		var src *html.Attribute
 		for _, attr := range imgNode.Attr {
@@ -76,7 +76,7 @@ func getEtagJson(fileSystem fs.FS, rootDir, htmlString string) (string, string, 
 
 	jsCode := `
 if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('sw.js').then(function() {
+    navigator.serviceWorker.register('/sw.js').then(function() {
         return navigator.serviceWorker.ready;
     }).then(
 		(reg) => {
@@ -125,50 +125,4 @@ if ('serviceWorker' in navigator) {
 	}
 
 	return buffer.String(), string(etagJson), nil
-}
-
-func injectLastModifiedToMediaTags(fileSystem fs.FS, rootDir, htmlString string) (string, error) {
-	const LastModified = "last-modified"
-	root, err := html.Parse(strings.NewReader(htmlString))
-	if err != nil {
-		return "", err
-	}
-
-	imageTags := findTags(root, []atom.Atom{atom.Img})
-	for _, imgNode := range imageTags {
-		var src *html.Attribute
-		oldLastModifiedIndex := -1
-		for i, attr := range imgNode.Attr {
-			attrCopy := attr
-			if attr.Key == LastModified {
-				oldLastModifiedIndex = i
-			} else if attr.Key == "src" {
-				src = &attrCopy
-			}
-		}
-		if src == nil || !strings.HasPrefix(src.Val, "/") {
-			continue
-		}
-		if oldLastModifiedIndex != -1 {
-			imgNode.Attr = append(imgNode.Attr[:oldLastModifiedIndex], imgNode.Attr[oldLastModifiedIndex+1:]...)
-		}
-
-		fileName := strings.TrimSuffix(caddyhttp.SanitizedPathJoin(rootDir, src.Val), "/")
-		stat, err := fs.Stat(fileSystem, fileName)
-		if err != nil {
-			continue
-		}
-
-		imgNode.Attr = append(imgNode.Attr, html.Attribute{
-			Key: LastModified,
-			Val: stat.ModTime().UTC().Format("2006-01-02 15:04:05"),
-		})
-	}
-	buffer := new(bytes.Buffer)
-	err = html.Render(bufio.NewWriter(buffer), root)
-	if err != nil {
-		return "", err
-	}
-
-	return buffer.String(), nil
 }

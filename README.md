@@ -2,41 +2,14 @@
 A modified version of Caddy web server.
 It includes a "last-modified" attribute in the tag of local objects.
 
-## Generate sample html page
 
-### Install Jinja2
+## Cache V2
+Customization is Added to caddy to behave more efficiently with HTTP cache.
 
-```bash
-pip install Jinja2
-```
+A service worker can be accessible in `/sw.js` that registers to any index.html by appending a script to the html file if Header `X-CacheV2-Extension-Enabled` is set to `true`.
+If you enable this option, DOM is being interpreted, and `link`, `img` and `script` that have `src` or `href` attributes are elicited to find etags If they have been placed in the current host.
 
-### Run generate command
-```bash
-python shell.py -media-dir YOUR_MEDIA_PATH -prefix PREFIX_INSTEAD_MEDIA_PATH -init-dataset DL_PIC_COUNT
-```
+In the end, Header `X-Etag-Config` is set by JSON etags calculated in the previous step.
 
-this command (optionally) download DL_PIC_COUNT pictures from unsample.net website, export them in YOUR_MEDIA_PATH and generate a html page with DL_PIC_COUNT img tag with PREFIX_INSTEAD_MEDIA_PATH prefix and all images listed in YOUR_MEDIA_PATH.
-
-example:
-```bash
-python shell.py -media-dir /home/divar/Desktop/x -prefix http://localhost -init-dataset 2
-```
-
-## Sample Caddyfile
-
-You can use this sample configuration in `Caddyfile` file in `caddy` dir.
-```
-localhost:80 {
-    root * /home/divar/Desktop/x
-    file_server
-    header ?Cache-Control "max-age=0"
-}
-```
-
-Note: run caddy file with --config Caddyfile arguments.
-
-## Quick start
-You can run project using `startup.sh` file using:
-```bash
-./startup.sh
-```
+## Test
+To test new behavior you can see `web-benchmarking` project.
