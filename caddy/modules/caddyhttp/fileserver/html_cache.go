@@ -78,21 +78,9 @@ func getEtagJsonAndRegisterServiceWorker(fileSystem fs.FS, rootDir, htmlString s
 if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('/sw.js').then(function() {
         return navigator.serviceWorker.ready;
-    }).then(
-		(reg) => {
-			const renewFunc = function(event) {
-				console.log("unload event.");
-				reg.active.postMessage({
-						type: 'renew',
-				});
-    		};
-			window.onbeforeunload = renewFunc;
-		}
-	).catch(function(error) {
+    }).catch(function(error) {
         console.log('Error : ', error);
     });
-
-	
 }
 `
 	body := findTags(root, []atom.Atom{atom.Body})[0]

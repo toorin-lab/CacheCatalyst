@@ -15,7 +15,7 @@ func getServiceWorkerRelativePath() string {
 }
 
 func loadCacheV2ServiceWorker(root string) error {
-	return copyFile("sw.js", root+"sw.js")
+	return copyFile("modules/caddyhttp/fileserver/sw.js", root+"sw.js")
 }
 
 func copyFile(src, dst string) error {
@@ -34,7 +34,7 @@ func copyFile(src, dst string) error {
 	for {
 		n, err := source.Read(buf)
 		if err != nil && errors.Is(err, io.EOF) {
-			return err
+			return nil
 		}
 		if n == 0 {
 			break
