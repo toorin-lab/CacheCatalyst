@@ -1,5 +1,14 @@
-localhost:80 {
-    root * /app/files
+{
+    http_port 8889
+    auto_https off
+
+    log {
+        level DEBUG
+    }
+}
+http://localhost:8889 {
     file_server
-    header ?Cache-Control "max-age=0"
+
+    bind 0.0.0.0
+    root * /storage/files
 }
