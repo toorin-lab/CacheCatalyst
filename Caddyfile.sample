@@ -1,0 +1,14 @@
+{
+    http_port 8889
+    auto_https off
+
+    log {
+        level DEBUG
+    }
+}
+http://localhost:8889 {
+    file_server
+
+    bind 0.0.0.0
+    root * /storage/files
+}

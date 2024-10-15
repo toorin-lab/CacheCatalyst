@@ -1,0 +1,14 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Simple html page</title>
+</head>
+<body>
+
+{% for item in pictures %}
+<img src="{{item.key}}" >
+{% endfor %}
+
+</body>
+</html>

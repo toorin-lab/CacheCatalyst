@@ -1,0 +1,66 @@
+{
+	email foo@bar
+}
+
+localhost {
+}
+
+example.com {
+}
+----------
+{
+	"apps": {
+		"http": {
+			"servers": {
+				"srv0": {
+					"listen": [
+						":443"
+					],
+					"routes": [
+						{
+							"match": [
+								{
+									"host": [
+										"example.com"
+									]
+								}
+							],
+							"terminal": true
+						},
+						{
+							"match": [
+								{
+									"host": [
+										"localhost"
+									]
+								}
+							],
+							"terminal": true
+						}
+					]
+				}
+			}
+		},
+		"tls": {
+			"automation": {
+				"policies": [
+					{
+						"subjects": [
+							"example.com"
+						],
+						"issuers": [
+							{
+								"email": "foo@bar",
+								"module": "acme"
+							},
+							{
+								"email": "foo@bar",
+								"module": "zerossl"
+							}
+						]
+					}
+				]
+			}
+		}
+	}
+}
