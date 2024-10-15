@@ -503,7 +503,6 @@ func (fsrv *FileServer) ServeHTTP(w http.ResponseWriter, r *http.Request, next c
 	content := file.(io.ReadSeeker)
 
 	// read and modify html file before serving by http library
-	//extensionEnabled := r.URL.Query().Get("X-CacheV2-Extension-Enabled") == "true"
 	extensionEnabled := r.Header.Get("X-CacheV2-Extension-Enabled") == "true"
 	if strings.HasSuffix(info.Name(), ".html") && extensionEnabled {
 		b := new(bytes.Buffer)

@@ -6,12 +6,6 @@ COPY ./caddy .
 
 RUN go mod download
 
-WORKDIR /tmp
-
-COPY Caddyfile.sample ./Caddyfile
-
-WORKDIR /app
-
 RUN go build -o newcaddy ./cmd/caddy
 
-ENTRYPOINT [ "./newcaddy", "run", "--config", "/tmp/Caddyfile" ]
+ENTRYPOINT [ "./newcaddy", "run", "--config", "/tmp/storage/Caddyfile" ]

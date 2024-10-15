@@ -4,10 +4,12 @@ import (
 	"errors"
 	"io"
 	"os"
+
+	"github.com/caddyserver/caddy/v2/modules/caddyhttp"
 )
 
 func getServiceWorkerFullPath(root string) string {
-	return root + "/sw.js"
+	return caddyhttp.SanitizedPathJoin(root, "/sw.js")
 }
 
 func getServiceWorkerRelativePath() string {
