@@ -1,6 +1,5 @@
-# caddy-cache
-A modified version of Caddy web server.
-It includes a "last-modified" attribute in the tag of local objects.
+# CacheCatalyst
+This is the source code of an optimized cache scheme for the Web that has been published in our paper entitled "Rethinking Web Caching: An Optimization for the Latency-Constrained Internet" in **HotNets'24**. In this paper, we discuss why the design of current web caching mechanisms is not optimal in the context of high-speed networks where latency, rather than bandwidth, is the primary bottleneck for web performance. Then, we propose an optimized caching approach in which web servers proactively provide clients with the latest validation tokens for resources during the initial step of page loading, allowing browsers to use unchanged cached content without unnecessary round trips.
 
 
 ## Cache V2
